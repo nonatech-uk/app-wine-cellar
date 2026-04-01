@@ -94,8 +94,20 @@ export default function Dashboard() {
                     {entry.wine_producer} {entry.wine_name}
                     {entry.wine_vintage ? ` ${entry.wine_vintage}` : ''}
                   </div>
-                  {entry.location && (
-                    <div className="text-xs text-text-secondary truncate">{entry.location}</div>
+                  {(entry.location || entry.gps_lat) && (
+                    <div className="text-xs text-text-secondary truncate">
+                      {entry.gps_lat != null && entry.gps_lng != null ? (
+                        <a
+                          href={`https://www.google.com/maps?q=${entry.gps_lat},${entry.gps_lng}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-accent hover:underline"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          {entry.location || `${entry.gps_lat.toFixed(2)}, ${entry.gps_lng.toFixed(2)}`}
+                        </a>
+                      ) : entry.location}
+                    </div>
                   )}
                 </div>
                 <RatingStars rating={entry.rating} size="sm" />

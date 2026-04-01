@@ -1,8 +1,142 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useWine, useWineLog, useAddLog, useUpdateWine } from '../hooks/useWines.ts'
+import { useWine, useWineLog, useAddLog, useUpdateLog, useUpdateWine } from '../hooks/useWines.ts'
 import RatingStars from '../components/common/RatingStars.tsx'
 import LoadingSpinner from '../components/common/LoadingSpinner.tsx'
+import type { LogEntry } from '../api/types.ts'
+
+function MapLink({ entry }: { entry: LogEntry }) {
+  const hasGps = entry.gps_lat != null && entry.gps_lng != null
+  const mapUrl = hasGps
+    ? `https://www.google.com/maps?q=${entry.gps_lat},${entry.gps_lng}`
+    : null
+
+  if (!entry.location && !hasGps) return null
+
+  const label = entry.location || `${entry.gps_lat?.toFixed(2)}, ${entry.gps_lng?.toFixed(2)}`
+
+  return mapUrl ? (
+    <a href={mapUrl} target="_blank" rel="noreferrer" className="text-xs text-accent hover:underline mt-1 inline-block">
+      {label}
+    </a>
+  ) : (
+    <span className="text-xs text-text-secondary mt-1 inline-block">{label}</span>
+  )
+}
+
+function TastingEntry({ entry, onEdit }: { entry: LogEntry; onEdit: (entry: LogEntry) => void }) {
+  return (
+    <div className="flex gap-4 py-3 border-b border-border last:border-0 group">
+      {entry.label_image_filename && (
+        <a href={`/api/v1/labels/${entry.label_image_filename}`} target="_blank" rel="noreferrer">
+          <img
+            src={`/api/v1/labels/${entry.label_image_filename}`}
+            alt="Label"
+            className="w-12 h-16 object-cover rounded border border-border"
+          />
+        </a>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <RatingStars rating={entry.rating} size="sm" />
+          <span className="text-xs text-text-secondary">
+            {new Date(entry.logged_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </span>
+          <span className="text-xs text-text-secondary px-1.5 py-0.5 rounded bg-bg-primary">{entry.source}</span>
+          <button
+            onClick={() => onEdit(entry)}
+            className="text-xs text-text-secondary hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity ml-auto"
+          >
+            Edit
+          </button>
+        </div>
+        {entry.review && <p className="text-sm mt-1">{entry.review}</p>}
+        {entry.personal_note && <p className="text-sm text-text-secondary mt-1 italic">{entry.personal_note}</p>}
+        <MapLink entry={entry} />
+      </div>
+    </div>
+  )
+}
+
+function EditTastingForm({ entry, onSave, onCancel }: {
+  entry: LogEntry
+  onSave: (logId: number, data: Record<string, unknown>) => void
+  onCancel: () => void
+}) {
+  const [form, setForm] = useState({
+    rating: entry.rating?.toString() ?? '',
+    review: entry.review ?? '',
+    personal_note: entry.personal_note ?? '',
+    location: entry.location ?? '',
+  })
+
+  const handleSave = () => {
+    const data: Record<string, unknown> = {}
+    const newRating = form.rating ? parseFloat(form.rating) : null
+    if (newRating !== entry.rating) data.rating = newRating
+    if (form.review !== (entry.review ?? '')) data.review = form.review || null
+    if (form.personal_note !== (entry.personal_note ?? '')) data.personal_note = form.personal_note || null
+    if (form.location !== (entry.location ?? '')) data.location = form.location || null
+    if (Object.keys(data).length > 0) {
+      onSave(entry.id, data)
+    } else {
+      onCancel()
+    }
+  }
+
+  return (
+    <div className="border border-accent/30 rounded-md p-4 my-2 space-y-3 bg-accent/5">
+      <div className="text-xs text-text-secondary">
+        Editing tasting from {new Date(entry.logged_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+      </div>
+      <div className="flex gap-4">
+        <div>
+          <label className="text-xs text-text-secondary">Rating (1-5)</label>
+          <input
+            type="number"
+            min="1"
+            max="5"
+            step="0.5"
+            value={form.rating}
+            onChange={e => setForm({ ...form, rating: e.target.value })}
+            className="block w-20 px-2 py-1 text-sm border border-border rounded bg-bg-secondary"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="text-xs text-text-secondary">Location (e.g. restaurant name, city)</label>
+          <input
+            value={form.location}
+            onChange={e => setForm({ ...form, location: e.target.value })}
+            className="block w-full px-2 py-1 text-sm border border-border rounded bg-bg-secondary"
+            placeholder="Override with restaurant name, venue..."
+          />
+        </div>
+      </div>
+      <div>
+        <label className="text-xs text-text-secondary">Review</label>
+        <textarea
+          value={form.review}
+          onChange={e => setForm({ ...form, review: e.target.value })}
+          rows={2}
+          className="block w-full px-2 py-1 text-sm border border-border rounded bg-bg-secondary"
+        />
+      </div>
+      <div>
+        <label className="text-xs text-text-secondary">Personal Note</label>
+        <textarea
+          value={form.personal_note}
+          onChange={e => setForm({ ...form, personal_note: e.target.value })}
+          rows={2}
+          className="block w-full px-2 py-1 text-sm border border-border rounded bg-bg-secondary"
+        />
+      </div>
+      <div className="flex gap-2">
+        <button onClick={handleSave} className="px-3 py-1 text-sm bg-accent text-white rounded hover:bg-accent-hover">Save</button>
+        <button onClick={onCancel} className="px-3 py-1 text-sm border border-border rounded hover:bg-bg-hover">Cancel</button>
+      </div>
+    </div>
+  )
+}
 
 export default function WineDetail() {
   const { id } = useParams<{ id: string }>()
@@ -10,9 +144,11 @@ export default function WineDetail() {
   const { data: wine, isLoading } = useWine(wineId)
   const { data: log } = useWineLog(wineId)
   const addLog = useAddLog()
+  const updateLog = useUpdateLog()
   const updateWine = useUpdateWine()
   const [showAddLog, setShowAddLog] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [editingLogId, setEditingLogId] = useState<number | null>(null)
   const [logForm, setLogForm] = useState({ rating: '', review: '', personal_note: '', location: '' })
   const [editForm, setEditForm] = useState<Record<string, string>>({})
 
@@ -29,6 +165,12 @@ export default function WineDetail() {
         setShowAddLog(false)
         setLogForm({ rating: '', review: '', personal_note: '', location: '' })
       },
+    })
+  }
+
+  const handleUpdateLog = (logId: number, data: Record<string, unknown>) => {
+    updateLog.mutate({ logId, data }, {
+      onSuccess: () => setEditingLogId(null),
     })
   }
 
@@ -158,6 +300,7 @@ export default function WineDetail() {
                   value={logForm.location}
                   onChange={e => setLogForm({ ...logForm, location: e.target.value })}
                   className="block w-full px-2 py-1 text-sm border border-border rounded bg-bg-secondary"
+                  placeholder="Restaurant, venue, city..."
                 />
               </div>
             </div>
@@ -186,32 +329,23 @@ export default function WineDetail() {
           </div>
         )}
 
-        <div className="space-y-3">
-          {log?.map(entry => (
-            <div key={entry.id} className="flex gap-4 py-3 border-b border-border last:border-0">
-              {entry.label_image_filename && (
-                <a href={`/api/v1/labels/${entry.label_image_filename}`} target="_blank" rel="noreferrer">
-                  <img
-                    src={`/api/v1/labels/${entry.label_image_filename}`}
-                    alt="Label"
-                    className="w-12 h-16 object-cover rounded border border-border"
-                  />
-                </a>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <RatingStars rating={entry.rating} size="sm" />
-                  <span className="text-xs text-text-secondary">
-                    {new Date(entry.logged_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </span>
-                  <span className="text-xs text-text-secondary px-1.5 py-0.5 rounded bg-bg-primary">{entry.source}</span>
-                </div>
-                {entry.review && <p className="text-sm mt-1">{entry.review}</p>}
-                {entry.personal_note && <p className="text-sm text-text-secondary mt-1 italic">{entry.personal_note}</p>}
-                {entry.location && <p className="text-xs text-text-secondary mt-1">{entry.location}</p>}
-              </div>
-            </div>
-          ))}
+        <div className="space-y-0">
+          {log?.map(entry =>
+            editingLogId === entry.id ? (
+              <EditTastingForm
+                key={entry.id}
+                entry={entry}
+                onSave={handleUpdateLog}
+                onCancel={() => setEditingLogId(null)}
+              />
+            ) : (
+              <TastingEntry
+                key={entry.id}
+                entry={entry}
+                onEdit={(e) => setEditingLogId(e.id)}
+              />
+            )
+          )}
           {(!log || log.length === 0) && (
             <div className="text-sm text-text-secondary py-4 text-center">No tastings recorded yet</div>
           )}
