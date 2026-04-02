@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useMe } from '../../hooks/useWines.ts'
+import AppSwitcher from './AppSwitcher'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: '◫' },
@@ -13,8 +14,9 @@ export default function Sidebar() {
 
   return (
     <aside className="w-52 bg-bg-secondary border-r border-border flex flex-col shrink-0">
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border flex items-center justify-between">
         <h1 className="text-lg font-bold text-accent">Wine Cellar</h1>
+        <AppSwitcher />
       </div>
       <nav className="flex-1 p-2 space-y-1">
         {NAV_ITEMS.map(({ to, label, icon }) => (
