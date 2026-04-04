@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from config.settings import settings
 from src.api.deps import close_pool, init_pool
 from src.api.routers import auth, cellar, ingest, labels, log, stats, wines, wishlist
+from src.api.usage_tracker import init_usage_tracker, shutdown_usage_tracker, track_usage_middleware, usage_pageview_router
 
 STATIC_DIR = Path(_project_root) / "static"
 
@@ -23,7 +24,9 @@ STATIC_DIR = Path(_project_root) / "static"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_pool()
+    init_usage_tracker("wine", settings.usage_dsn)
     yield
+    shutdown_usage_tracker()
     close_pool()
 
 
@@ -41,6 +44,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.middleware("http")(track_usage_middleware)
+
 # Mount routers
 app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
 app.include_router(wines.router, prefix="/api/v1", tags=["wines"])
@@ -50,6 +55,7 @@ app.include_router(wishlist.router, prefix="/api/v1", tags=["wishlist"])
 app.include_router(stats.router, prefix="/api/v1", tags=["stats"])
 app.include_router(ingest.router, prefix="/api/v1", tags=["ingest"])
 app.include_router(labels.router, prefix="/api/v1", tags=["labels"])
+app.include_router(usage_pageview_router, prefix="/api/v1")
 
 
 @app.get("/health")

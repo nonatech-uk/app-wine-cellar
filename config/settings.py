@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     db_pool_min: int = 2
     db_pool_max: int = 5
 
+    # Usage tracking
+    usage_dsn: str = ""
+
     # Pipeline integration
     pipeline_secret: str = ""
     label_storage_path: str = "/app/data/labels"
