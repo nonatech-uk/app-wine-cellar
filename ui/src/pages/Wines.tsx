@@ -24,7 +24,7 @@ export default function Wines() {
           placeholder="Search producer or wine..."
           value={q}
           onChange={e => { setQ(e.target.value); setOffset(0) }}
-          className="px-3 py-1.5 text-sm border border-border rounded-md bg-bg-secondary focus:outline-none focus:ring-1 focus:ring-accent w-64"
+          className="px-3 py-1.5 text-sm border border-border rounded-md bg-bg-secondary focus:outline-none focus:ring-1 focus:ring-accent w-full sm:w-64"
         />
         <select
           value={country}
@@ -65,7 +65,7 @@ export default function Wines() {
       {isLoading ? (
         <LoadingSpinner />
       ) : (
-        <div className="bg-bg-card border border-border rounded-lg overflow-hidden">
+        <div className="bg-bg-card border border-border rounded-lg overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-bg-primary">

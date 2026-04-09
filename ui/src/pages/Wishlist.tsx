@@ -16,7 +16,7 @@ export default function Wishlist() {
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Wishlist</h2>
 
-      <div className="bg-bg-card border border-border rounded-lg overflow-hidden">
+      <div className="bg-bg-card border border-border rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-bg-primary">
@@ -70,7 +70,7 @@ export default function Wishlist() {
       {acquired.length > 0 && (
         <>
           <h3 className="text-sm font-medium text-text-secondary mt-6">Acquired</h3>
-          <div className="bg-bg-card border border-border rounded-lg overflow-hidden opacity-60">
+          <div className="bg-bg-card border border-border rounded-lg overflow-x-auto opacity-60">
             <table className="w-full text-sm">
               <tbody>
                 {acquired.map(item => (
