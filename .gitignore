@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 .env
 *.egg-info/
+
+# Shared libraries copied during build
+mees-shared-py/
+mees-shared-ui/

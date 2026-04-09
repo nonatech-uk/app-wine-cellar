@@ -1,6 +1,10 @@
 ## Stage 1: Build the React UI
 FROM node:22-slim AS ui-build
 
+# Copy shared UI library first (peer of the app)
+WORKDIR /mees-shared-ui
+COPY mees-shared-ui/ .
+
 WORKDIR /ui
 COPY ui/package.json ui/package-lock.json ./
 RUN npm ci
@@ -14,6 +18,8 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
+# Copy shared Python library and install it
+COPY mees-shared-py/ /tmp/mees-shared-py/
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
